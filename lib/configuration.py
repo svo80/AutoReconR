@@ -3,6 +3,7 @@
 import os
 import glob
 import toml
+import sys
 from lib import auxiliary, targetlist
 
 # defines how sections in configuration files should be mapped to internally
@@ -39,11 +40,11 @@ def get_configuration(configuration):
                         elif isinstance(configuration[section_name], list):
                             configuration[section_name] += data[profile]
                         else:
-                            auxiliary.warn('Warning: The section name {profile} in configuration file {filename} could not be mapped internally.')
+                            auxiliary.warn('{bgreen}Warning:{rst} The section name {profile} in configuration file {filename} could not be mapped internally.')
                     else:
-                        auxiliary.warn('Warning: Unknown markup {profile} discovered in configuration file {filename}.')
+                        auxiliary.warn('{bgreen}Warning:{rst} Unknown markup {profile} discovered in configuration file {filename}.')
         except (OSError, toml.decoder.TomlDecodeError) as e:
-            auxiliary.fail('Error: The configuration file {filename} could not be read.')
+            auxiliary.fail('{bgreen}Error:{rst} The configuration file {filename} could not be read.')
 
 
     if len(configuration['port_scan_profiles']) == 0:
@@ -65,8 +66,12 @@ def check_configuration(config, args):
         applications = auxiliary.objectview(config['applications'])
         wordslists = auxiliary.objectview(config['wordlists'])
     except (KeyError, AttributeError) as err: 
-        auxiliary.fail('Error: A configuration section was not found or could not be successfully processed: {err}')
+        auxiliary.fail('{bgreen}Error:{rst} A configuration section was not found or could not be successfully processed: {err}')
 
+    for application in config['applications']:
+        if not os.path.isfile(config['applications'][application]):
+            auxiliary.warn('{bgreen}Warning:{rst} The application path for {application} was not found.')
+    
     errors = False
 
     if args.concurrent_targets <= 0:
@@ -149,6 +154,6 @@ def check_configuration(config, args):
         errors = True
 
     if not os.getuid() == 0:
-        auxiliary.warn('Warning: You are not running the program with superuser privileges. Service scanning may be impacted.')
+        auxiliary.warn('{bgreen}Warning:{rst} You are not running the program with superuser privileges. Service scanning may be impacted.')
 
     return (errors, targets)

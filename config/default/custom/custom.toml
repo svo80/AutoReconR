@@ -18,6 +18,6 @@
     [port-scan.debug.nmap-quick]
 
         [port-scan.debug.nmap-quick.service-detection]
-        command = '{applications.nmap}  {nmap_extra} -p 10443 -sV -oN "{scandir}/_quick_tcp_nmap.txt" -oX "{scandir}/xml/_quick_tcp_nmap.xml" {address}'
+        command = '{applications.nmap}  {nmap_extra} --top-ports 20 -sV -oN "{scandir}/_quick_tcp_nmap.txt" -oX "{scandir}/xml/_quick_tcp_nmap.xml" {address}'
         pattern = '^(?P<port>\d+)\/(?P<protocol>(tcp|udp))(.*)open(\s*)(?P<service>[\w\-\/]+)(\s*)(.*)$'
 

@@ -49,7 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--read', action='store', type=str, default='', dest='target_file', help='Read targets from file.')
     parser.add_argument('--no-report', action='store_true', default=False, help='Do not create a summary report after completing scanning a target.')
     parser.add_argument('-v', '--verbose', action='count', default=0, help='Enable verbose output. Repeat for more verbosity.')
-    parser.add_argument('--heartbeat', action='store', type=int, default=180, help='Specifies the heartbeat interval for notification messages during scanning.')
+    parser.add_argument('--heartbeat', action='store', type=int, default=180, help='Specifies the heartbeat interval (in seconds) for notification messages during scanning.')
     parser.add_argument('--disable-sanity-checks', action='store_true', default=False, help='Disable sanity checks that would otherwise prevent the scans from running.')
     parser.error = lambda s: auxiliary.fail(s[0].upper() + s[1:])
     args = parser.parse_args()

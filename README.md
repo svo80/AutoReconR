@@ -1,16 +1,36 @@
 # AutoReconR
 
-AutoReconR attempts to automate parts of the network reconnaissance and service enumeration phase. Respective findings are described and summarized in an automatically generated report. As such, AutoReconR may facilitate identifying potential weaknesses in target systems more quickly and finding an entry point. 
+AutoReconR attempts to automate parts of the network reconnaissance and service
+enumeration phase. Respective findings are described and summarized in an
+automatically generated report. As such, AutoReconR may facilitate identifying
+potential weaknesses in target systems more quickly as well as finding an entry
+point. 
 
-The tool is intended to be running in the background while the tester can focus on other tasks in parallel. For instance, in laboratory environments as offered by Offensive Security or during security exams like OSCP, the tester may start writing exploits while AutoReconR scans the remaining targets and performs automatic service enumeration. 
+The tool is intended to be running in the background while the tester can focus
+on other tasks in parallel. For instance, in laboratory environments as offered
+by *Offensive Security* or during security exams like OSCP, the tester may start
+writing exploits, while AutoReconR scans the remaining targets and performs
+automatic service enumeration. 
 
-The tool is highly customizable and supports different scanning profiles in order to efficiently balance program runtime with the amount of extracted information. It should be noted though that the scanning approach is generally deep and aims at examining a system in great detail. A typical program run may take between 20 and 60 minutes, depending on the discovered system services and corresponding programs that should be subsequently executed. Applications such as enum4linux, gobuster, or nikto are able to retrieve extensive information about a target but also increase the required total scanning time. 
+The tool is highly customizable and supports different scanning [profiles](doc/profiles.md) in
+order to efficiently balance program runtime with the amount of extracted
+information. It should be noted though that the scanning approach is generally
+deep and aims at examining a system in great detail. A typical program run may
+take well between 20 and 60 minutes, depending on the discovered system services and
+corresponding programs that should be subsequently executed. Applications such
+as *enum4linux*, *gobuster*, or *nikto* are able to retrieve extensive information
+about a target but also increase the required total scanning time. 
 
-It is also noteworthy that AutoReconR **does not perform any automatic exploitation**, although respective programs can be easily integrated and triggered with the help of custom configuration files that will be automatically included at startup. 
+It is also noteworthy that AutoReconR **does not perform any automatic
+exploitation**, although respective programs can be easily integrated and
+triggered with the help of custom configuration files that will be
+automatically included at startup. 
 
 ## Origin and Features
 
-AutoReconR is forked from [AutoRecon](https://github.com/Tib3rius/AutoRecon) by Tib3rius. The tool was extended with a number of additional features, including
+AutoReconR was originally forked from
+[AutoRecon](https://github.com/Tib3rius/AutoRecon) by Tib3rius. The tool was
+refactored and extended with a number of additional features, including
 
 * the possibility to specify targets either via the command line or an input file,
 * define scanning and service enumeration profiles in custom configuration files,
@@ -108,11 +128,30 @@ Assuming the list of targets has been defined in the file *ips.txt*, the scannin
 $ pyton3 autoreconr -r ips.txt
 ```
 
-In the case above, autoreconr is invoked with the `default` profile. This profile includes a standard TCP nmap scan (for the most common 1,000 ports), a full TCP scan, and a UDP scan for the top 20 ports. For any service that is discovered, in-depth service enumeration is performed, based on the applications that are listed in the  `service-scans` profile.
+In the case above, autoreconr is invoked with the `default` [profile](doc/profiles.md). This
+profile defines a standard TCP nmap scan (for the most common 1,000 ports), a
+full TCP scan, and a UDP scan for the top 20 ports. For any service that is
+discovered, in-depth service enumeration is performed, based on the
+applications that are listed in the  `service-scans` profile.
 
-If, e.g., a running web server is identified on a target, autoreconr automatically launches *curl*, *whatweb*, *gobuster*, and *nikto* in order to fingerprint the service and potentially discover sensitive files and directories. Autoreconr also creates a screenshot of any resource that is found.
+If, e.g., a running web server is identified on a target, autoreconr
+automatically launches *curl*, *whatweb*, *gobuster*, and *nikto* in order to
+fingerprint the service and potentially discover sensitive files and
+directories. Autoreconr also creates a screenshot of any resource that is
+found.
 
-Please note that the runtime of especially gobuster and nikto can be lengthy, depending on the complexity of the service and the corresponding web application.
+Please note that the runtime of especially gobuster and nikto can be lengthy,
+depending on the complexity of the service and the corresponding web
+application.
 
-In order to efficiently balance the runtime of the program and the scanning depth, autoreconr offers a number of different command line options, including skipping service enumeration entirely or limiting it to certain ports or applications. On the other hand, for a particular intense scan, autoreconr can automatically trigger additional commands when a match with a pre-defined pattern is found. Thereby, it is for instance possible starting another *gobuster* search for any directory that is discovered and even enumerating applications on a deeper hierarchy level in more detail. A *heartbeat* routine is called in parallel to inform the user of the number of remaining tasks in order to roughly estimate the runtime of the entire scan.
+In order to efficiently balance the runtime of the program and the scanning
+depth, AutoReconR offers a number of different command line options, including
+skipping service enumeration entirely or limiting it to certain ports or
+applications. On the other hand, for a particular intense scan, AutoReconR can
+automatically trigger additional commands when a match with a pre-defined
+pattern is found. Thereby, it is for instance possible starting another
+*gobuster* search for any directory that is discovered and even enumerating
+applications on a deeper hierarchy level in more detail. A *heartbeat* routine
+is called in parallel to inform the user of the number of remaining tasks in
+order to roughly estimate the runtime of the entire scan.
 
