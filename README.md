@@ -125,7 +125,7 @@ optional arguments:
 Assuming the list of targets has been defined in the file *ips.txt*, the scanning process can be easily started with:
 
 ```bash
-$ pyton3 autoreconr -r ips.txt
+$ python3 autoreconr.py -r ips.txt
 ```
 
 In the case above, autoreconr is invoked with the `default` [profile](doc/profiles.md). This
