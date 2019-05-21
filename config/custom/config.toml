@@ -1,0 +1,74 @@
+[files]
+    commands = '_commands.log'
+    manual_commands = '_manual_commands.log'
+    errors = '_errors.log'
+    notes = '_notes.txt'
+    patterns = '_patterns.txt'
+    report = 'report.pdf'
+
+
+# configuration for program paths
+[applications]
+
+    nmap = '/usr/bin/nmap'
+
+    # system programs
+    tee = '/usr/bin/tee'
+
+    # not installed on Kali by default
+    # install with (sudo) apt-get install enscript
+    enscript = '/usr/bin/enscript'
+    ps2pdf = '/usr/bin/ps2pdf'
+
+    # password brute-forcing programs
+    hydra = '/usr/bin/hydra'
+    medusa = '/usr/bin/medusa'
+    patator = '/usr/bin/patator'
+
+    # programs for web servers and applications
+    sslscan = '/usr/bin/sslscan'
+    curl = '/usr/bin/curl'
+    dirb = '/usr/bin/dirb'
+    wkhtmltoimage = '/usr/bin/wkhtmltoimage'
+    whatweb = '/usr/bin/whatweb'
+    nikto = '/usr/bin/nikto'
+    gobuster = '/usr/bin/gobuster'
+    wpscan = '/usr/local/bin/wpscan'
+    dirsearch = ''
+    
+    # WebDAV programs
+    davtest = '/usr/bin/davtest'
+    cadaver = '/usr/bin/cadaver'
+
+    # database programs
+    tnscmd10g = '/usr/bin/tnscmd10g'
+    oscanner = '/usr/bin/oscanner'
+    odat = '/usr/bin/python odat.py'
+    sqsh = '/usr/bin/sqsh'
+
+    # RPC programs
+    rpcclient = '/usr/bin/rpcclient'
+
+    # SIP programs
+    svwar = '/usr/bin/svwar'
+
+    # SMB programs
+    enum4linux = '/usr/bin/enum4linux'
+    smbclient = '/usr/bin/smbclient'
+    smbmap = '/usr/bin/smbmap'
+    smb_version = '/usr/local/bin/get_smb_version'
+    nbtscan = '/usr/bin/nbtscan'
+
+    # SMTP programs
+    smtp_user_enum = '/usr/bin/smtp-user-enum'
+
+    # SNMP programs
+    onesixtyone = '/usr/bin/onesixtyone'
+    snmpwalk = '/usr/bin/snmpwalk'
+
+
+[wordlists]
+
+    usernames = '/usr/share/seclists/Usernames/top-usernames-shortlist.txt'
+    passwords = '/usr/share/seclists/Passwords/darkweb2017-top100.txt'
+

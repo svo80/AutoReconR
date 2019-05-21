@@ -1,0 +1,590 @@
+[service-scan.all-services] # Define scans here that you want to run against all services.
+
+service-names = [
+    '.+'
+]
+
+    [[service-scan.all-services.scan]]
+    name = 'sslscan'
+    command = 'if [ "{secure}" == "True" ]; then {applications.sslscan}  --show-certificate --no-colour {address}:{port} 2>&1 | {applications.tee} "{scandir}/{protocol}_{port}_sslscan.txt"; fi'
+
+[service-scan.cassandra]
+
+service-names = [
+    '^apani1'
+]
+
+    [[service-scan.cassandra.scan]]
+    name = 'nmap-cassandra'
+    command = '{applications.nmap} {nmap_extra} -sV  -p {port} --script="(cassandra* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_cassandra_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_cassandra_nmap.xml" {address}'
+
+[service-scan.cups]
+
+service-names = [
+    '^ipp'
+]
+
+    [[service-scan.cups.scan]]
+    name = 'nmap-cups'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(cups* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_cups_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_cups_nmap.xml" {address}'
+
+[service-scan.distcc]
+
+service-names = [
+    '^distccd'
+]
+
+    [[service-scan.distcc.scan]]
+    name = 'nmap-distcc'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="distcc-cve2004-2687" --script-args="distcc-cve2004-2687.cmd=id" -oN "{scandir}/{category}{protocol}_{port}_distcc_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_distcc_nmap.xml" {address}'
+
+[service-scan.dns]
+
+service-names = [
+    '^domain'
+]
+
+    [[service-scan.dns.scan]]
+    name = 'nmap-dns'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(dns* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_dns_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_dns_nmap.xml" {address}'
+
+[service-scan.finger]
+
+service-names = [
+    '^finger'
+]
+
+    [[service-scan.finger.scan]]
+    name = 'nmap-finger'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="finger" -oN "{scandir}/{category}{protocol}_{port}_finger_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_finger_nmap.xml" {address}'
+
+[service-scan.ftp]
+
+service-names = [
+    '^ftp',
+    '^ftp\-data'
+]
+
+    [[service-scan.ftp.scan]]
+    name = 'nmap-ftp'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(ftp* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_ftp_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_ftp_nmap.xml" {address}'
+
+        [[service-scan.ftp.scan.pattern]]
+        description = 'Anonymous FTP enabled!'
+        pattern = 'Anonymous FTP login allowed'
+
+    [[service-scan.ftp.manual]]
+    description = 'Bruteforce logins:'
+    commands = [
+        '{applications.hydra} -L "{wordlists.usernames}" -P "{wordlists.passwords}" -e nsr -s {port} -o "{scandir}/{category}{protocol}_{port}_ftp_hydra.txt" ftp://{address}',
+        '{applications.medusa} -U "{wordlists.usernames}" -P "{wordlists.passwords}" -e ns -n {port} -O "{scandir}/{category}{protocol}_{port}_ftp_medusa.txt" -M ftp -h {address}'
+    ]
+
+[service-scan.http]
+
+service-names = [
+    '^http',
+]
+
+ignore-service-names = [
+    # Micrsoft Windows RPC over HTTP (IIS)
+    '^nacn_http$'
+]
+
+    [[service-scan.http.scan]]
+    name = 'nmap-http'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(http* or ssl*) and not (brute or broadcast or dos or external or http-slowloris* or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_http_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_{scheme}_nmap.xml" {address}'
+
+        [[service-scan.http.scan.pattern]]
+        description = 'HTTP server identified: {match}'
+        pattern = 'Server: ([^\n]+)'
+
+        [[service-scan.http.scan.pattern]]
+        description = 'WebDAV is enabled.'
+        pattern = 'WebDAV is ENABLED'
+         
+    [[service-scan.http.scan]]
+    name = 'curl-index'
+    command = '{applications.curl}  -sSik {scheme}://{address}:{port}/ -m 10 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_index.html"'
+
+        [[service-scan.http.scan.pattern]]
+        pattern = '(?i)Powered by [^\n]+'
+
+    [[service-scan.http.scan]]
+    name = 'curl-robots'
+    command = '{applications.curl}  -sSik {scheme}://{address}:{port}/robots.txt -m 10 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_robots.txt"'
+
+    [[service-scan.http.scan]]
+    name = 'wkhtmltoimage'
+    command = 'if hash {applications.wkhtmltoimage}  2> /dev/null; then {applications.wkhtmltoimage}  --format png {scheme}://{address}:{port}/ {scandir}/{category}{protocol}_{port}_{scheme}_screenshot.png; fi'
+
+    [[service-scan.http.scan]]
+    name = 'whatweb'
+    command = '{applications.whatweb}  --color=never --no-errors -a 3 -v {scheme}://{address}:{port} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_whatweb.txt"'
+
+    [[service-scan.http.scan]]
+    name = 'gobuster'
+    command = '{applications.gobuster} -u {scheme}://{address}:{port}/ -w /usr/share/seclists/Discovery/Web-Content/big.txt -e -f -k -l -r -s "200,204,301,302,307,403" -x "txt,html,php,pl,asp,aspx" 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_gobuster.txt"'
+    level = 2
+    limit_to = [80, 443, 8000, 8080]
+
+            [[service-scan.http.scan.pattern]]
+            description = 'HTTP resource discovered: {match}'
+            pattern = '(http[s]?://.+?)\s\(Status: 200\)'
+            except = ['manual$', 'icons$', 'lang$', 'images$', 'usage$', 'skins$']
+
+                [[service-scan.http.scan.pattern.post_processor]]
+                name = 'wkhtmltoimage'
+                command = '{applications.wkhtmltoimage}  --format png {match} {scandir}/{category}{protocol}_{port}_{scheme}_{record}.png'
+
+                [[service-scan.http.scan.pattern.post_processor]]
+                name = 'gobuster'
+                command = '{applications.gobuster} -u {match} -w /usr/share/seclists/Discovery/Web-Content/common.txt -e -f -k -l -r -s "200,204,301,302,307,403" 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_{record}_gobuster.txt"'
+                except = ['(.+\..*$)']
+
+
+    [[service-scan.http.scan]]
+    name = 'nikto'
+    command = '{applications.nikto} -ask=no -h {scheme}://{address}:{port} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_nikto.txt"'
+    level = 3
+    limit_to = [80, 443, 8000, 8080]
+
+    [[service-scan.http.manual]]
+    description = '(dirsearch) Multi-threaded recursive directory/file enumeration for web servers using various wordlists:'
+    commands = [
+        '{applications.dirsearch} -u {scheme}://{address}:{port}/ -t 16 -r -e txt,html,php,asp,aspx -f -w /usr/share/seclists/Discovery/Web-Content/big.txt --plain-text-report="{scandir}/{category}{protocol}_{port}_{scheme}_dirsearch_big.txt"',
+        '{applications.dirsearch} -u {scheme}://{address}:{port}/ -t 16 -r -e txt,html,php,asp,aspx -f -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt --plain-text-report="{scandir}/{category}{protocol}_{port}_{scheme}_dirsearch_dirbuster.txt"'
+    ]
+
+    [[service-scan.http.manual]]
+    description = '(dirb) Recursive directory/file enumeration for web servers using various wordlists (same as dirsearch above):'
+    commands = [
+        '{applications.dirb} {scheme}://{address}:{port}/ -o "{scandir}/{category}{protocol}_{port}_{scheme}_dirb_big.txt" /usr/share/seclists/Discovery/Web-Content/big.txt',
+        '{applications.dirb} {scheme}://{address}:{port}/ -o "{scandir}/{category}{protocol}_{port}_{scheme}_dirb_dirbuster.txt" /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt'
+    ]
+
+    [[service-scan.http.manual]]
+    description = '(gobuster) Directory/file enumeration for web servers using various wordlists (same as dirb above):'
+    commands = [
+        '{applications.gobuster} -u {scheme}://{address}:{port}/ -w /usr/share/seclists/Discovery/Web-Content/common.txt -e -f -k -l -r -s "200,204,301,302,307,403,500" -x "txt,html,php,pl,asp,aspx" -o "{scandir}/{category}{protocol}_{port}_{scheme}_gobuster_big.txt"',
+        '{applications.gobuster} -u {scheme}://{address}:{port}/ -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -e -f -k -l -r -s "200,204,301,302,307,403,500" -x "txt,html,php,pl,asp,aspx" -o "{scandir}/{category}{protocol}_{port}_{scheme}_gobuster_dirbuster.txt"'
+    ]
+
+    [[service-scan.http.manual]]
+    description = '(wpscan) WordPress Security Scanner (useful if WordPress is found):'
+    commands = [
+        '{applications.wpscan}  --url {scheme}://{address}:{port}/ --no-update -e vp,vt,tt,cb,dbe,u,m -f cli-no-color 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_wpscan.txt"'
+    ]
+    
+    [[service-scan.http.manual]]
+    description = '(cadaver) WebDAV command-line client (useful if WebDAV is enabled):'
+    commands = [
+        '{applications.davtest} -cleanup -nocreate -url {scheme}://{address}:{port}/ 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_davtest.txt"',
+        '{applications.cadaver} {scheme}://{address}:{port}/'
+    ]
+
+    [[service-scan.http.manual]]
+    description = "Credential bruteforcing commands (don't run these without modifying them):"
+    commands = [
+        '{applications.hydra} -L "{wordlists.usernames}" -P "{wordlists.passwords}" -e nsr -s {port} -o "{scandir}/{category}{protocol}_{port}_{scheme}_auth_hydra.txt" {scheme}-get://{address}/path/to/auth/area',
+        '{applications.medusa} -U "{wordlists.usernames}" -P "{wordlists.passwords}" -e ns -n {port} -O "{scandir}/{category}{protocol}_{port}_{scheme}_auth_medusa.txt" -M http -h {address} -m DIR:/path/to/auth/area',
+        '{applications.hydra} -L "{wordlists.usernames}" -P "{wordlists.passwords}" -e nsr -s {port} -o "{scandir}/{category}{protocol}_{port}_{scheme}_form_hydra.txt" {scheme}-post-form://{address}/path/to/login.php:username=^USER^&password=^PASS^:invalid-login-message',
+        '{applications.medusa} -U "{wordlists.usernames}" -P "{wordlists.passwords}" -e ns -n {port} -O "{scandir}/{category}{protocol}_{port}_{scheme}_form_medusa.txt" -M web-form -h {address} -m FORM:/path/to/login.php -m FORM-DATA:"post?username=&password=" -m DENY-SIGNAL:"invalid login message"',
+    ]
+
+[service-scan.imap]
+
+service-names = [
+    '^imap'
+]
+
+    [[service-scan.imap.scan]]
+    name = 'nmap-imap'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(imap* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_imap_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_imap_nmap.xml" {address}'
+
+[service-scan.kerberos]
+
+service-names = [
+    '^kerberos',
+    '^kpasswd'
+]
+
+    [[service-scan.kerberos.scan]]
+    name = 'nmap-kerberos'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="krb5-enum-users" -oN "{scandir}/{category}{protocol}_{port}_kerberos_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_kerberos_nmap.xml" {address}'
+
+[service-scan.ldap]
+
+service-names = [
+    '^ldap'
+]
+
+    [[service-scan.ldap.scan]]
+    name = 'nmap-ldap'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(ldap* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_ldap_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_ldap_nmap.xml" {address}'
+
+    [[service-scan.ldap.scan]]
+    name = 'enum4linux'
+    command = '{applications.enum4linux} -a -M -l -d {address} 2>&1 | {applications.tee} "{scandir}/{category}enum4linux.txt"'
+    run_once = true
+    ports.tcp = [139, 389, 445]
+    ports.udp = [137]
+
+[service-scan.mongodb]
+
+service-names = [
+    '^mongod'
+]
+
+    [[service-scan.mongodb.scan]]
+    name = 'nmap-mongodb'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="mongodb*" -oN "{scandir}/{category}{protocol}_{port}_mongodb_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_mongodb_nmap.xml" {address}'
+
+[service-scan.mssql]
+
+service-names = [
+    '^mssql',
+    '^ms\-sql'
+]
+
+    [[service-scan.mssql.scan]]
+    name = 'nmap-mssql'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(ms-sql* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" --script-args="mssql.instance-port={port},mssql.username=sa,mssql.password=sa" -oN "{scandir}/{category}{protocol}_{port}_mssql_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_mssql_nmap.xml" {address}'
+
+    [[service-scan.mssql.manual]]
+    description = '(sqsh) interactive database shell'
+    commands = [
+        '{applications.sqsh} -U <username> -P <password> -S {address}:{port}'
+    ]
+
+[service-scan.mysql]
+
+service-names = [
+    '^mysql'
+]
+
+    [[service-scan.mysql.scan]]
+    name = 'nmap-mysql'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(mysql* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_mysql_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_mysql_nmap.xml" {address}'
+
+[service-scan.nfs]
+
+service-names = [
+    '^nfs',
+    '^rpcbind'
+]
+
+    [[service-scan.nfs.scan]]
+    name = 'nmap-nfs'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(rpcinfo or nfs*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_nfs_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_nfs_nmap.xml" {address}'
+
+[service-scan.nntp]
+
+service-names = [
+    '^nntp'
+]
+
+    [[service-scan.nntp.scan]]
+    name = 'nmap-nntp'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="nntp-ntlm-info" -oN "{scandir}/{category}{protocol}_{port}_nntp_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_nntp_nmap.xml" {address}'
+
+[service-scan.oracle]
+
+service-names = [
+    '^oracle'
+]
+
+    [[service-scan.oracle.scan]]
+    name = 'nmap-oracle'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(oracle* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_oracle_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_oracle_nmap.xml" {address}'
+
+    [[service-scan.oracle.scan]]
+    name = 'oracle-tnscmd-ping'
+    command = '{applications.tnscmd10g} ping -h {address} -p {port} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_oracle_tnscmd_ping.txt"'
+
+    [[service-scan.oracle.scan]]
+    name = 'oracle-tnscmd-version'
+    command = '{applications.tnscmd10g} version -h {address} -p {port} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_oracle_tnscmd_version.txt"'
+
+    [[service-scan.oracle.scan]]
+    name = 'oracle-tnscmd-version'
+    command = '{applications.tnscmd10g} version -h {address} -p {port} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_oracle_tnscmd_version.txt"'
+
+    [[service-scan.oracle.scan]]
+    name = 'oracle-scanner'
+    command = '{applications.oscanner} -v -s {address} -P {port} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_oracle_scanner.txt"'
+
+    [[service-scan.oracle.manual]]
+    description = 'Brute-force SIDs using Nmap'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="oracle-sid-brute" -oN "{scandir}/{category}{protocol}_{port}_oracle_sid-brute_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_oracle_sid-brute_nmap.xml" {address}'
+
+    [[service-scan.oracle.manual]]
+    description = 'Install ODAT (https://github.com/quentinhardy/odat) and run the following commands:'
+    commands = [
+        '{applications.odat} tnscmd -s {address} -p {port} --ping',
+        '{applications.odat} tnscmd -s {address} -p {port} --version',
+        '{applications.odat} tnscmd -s {address} -p {port} --status',
+        '{applications.odat} sidguesser -s {address} -p {port}',
+        '{applications.odat} passwordguesser -s {address} -p {port} -d <sid> --accounts-file accounts/accounts_multiple.txt',
+        '{applications.odat} tnspoison -s {address} -p {port} -d <sid> --test-module'
+    ]
+
+    [[service-scan.oracle.manual]]
+    description = 'Install Oracle Instant Client (https://github.com/rapid7/metasploit-framework/wiki/How-to-get-Oracle-Support-working-with-Kali-Linux) and then bruteforce with patator:'
+    commands = [
+        '{applications.patator} oracle_login host={address} port={port} user=COMBO00 password=COMBO01 0=/usr/share/seclists/Passwords/Default-Credentials/oracle-betterdefaultpasslist.txt -x ignore:code=ORA-01017 -x ignore:code=ORA-28000'
+    ]
+
+[service-scan.pop3]
+
+service-names = [
+    '^pop3'
+]
+
+    [[service-scan.pop3.scan]]
+    name = 'nmap-pop3'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(pop3* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_pop3_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_pop3_nmap.xml" {address}'
+
+[service-scan.rdp]
+
+service-names = [
+    '^rdp',
+    '^ms\-wbt\-server',
+    '^ms\-term\-serv'
+]
+
+    [[service-scan.rdp.scan]]
+    name = 'nmap-rdp'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(rdp* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_rdp_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_rdp_nmap.xml" {address}'
+
+    [[service-scan.rdp.manual]]
+    description = 'Bruteforce logins:'
+    commands = [
+        '{applications.hydra} -L "{wordlists.usernames}" -P "{wordlists.passwords}" -e nsr -s {port} -o "{scandir}/{category}{protocol}_{port}_rdp_hydra.txt" rdp://{address}',
+        '{applications.medusa} -U "{wordlists.usernames}" -P "{wordlists.passwords}" -e ns -n {port} -O "{scandir}/{category}{protocol}_{port}_rdp_medusa.txt" -M rdp -h {address}'
+    ]
+
+[service-scan.rmi]
+
+service-names = [
+    '^java\-rmi',
+    '^rmiregistry'
+]
+
+    [[service-scan.rmi.scan]]
+    name = 'nmap-rmi'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="rmi-vuln-classloader,rmi-dumpregistry" -oN "{scandir}/{category}{protocol}_{port}_rmi_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_rmi_nmap.xml" {address}'
+
+[service-scan.rpc]
+
+service-names = [
+    '^msrpc',
+    '^rpcbind',
+    '^erpc'
+]
+
+    [[service-scan.rpc.scan]]
+    name = 'nmap-msrpc'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="msrpc-enum,rpc-grind,rpcinfo" -oN "{scandir}/{category}{protocol}_{port}_rpc_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_rpc_nmap.xml" {address}'
+
+    [[service-scan.rpc.manual]]
+    description = 'RPC Client:'
+    commands = [
+        '{applications.rpcclient}  -p {port} -U "" {address}'
+    ]
+
+[service-scan.sip]
+
+service-names = [
+    '^asterisk'
+]
+
+    [[service-scan.sip.scan]]
+    name = 'nmap-sip'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="sip-enum-users,sip-methods" -oN "{scandir}/{category}{protocol}_{port}_sip_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_sip_nmap.xml" {address}'
+
+    [[service-scan.sip.scan]]
+    name = 'svwar'
+    command = '{applications.svwar}  -D -m INVITE -p {port} {address}'
+
+[service-scan.ssh]
+
+service-names = [
+    '^ssh'
+]
+
+    [[service-scan.ssh.scan]]
+    name = 'nmap-ssh'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="ssh2-enum-algos,ssh-hostkey,ssh-auth-methods" -oN "{scandir}/{category}{protocol}_{port}_ssh_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_ssh_nmap.xml" {address}'
+
+    [[service-scan.ssh.manual]]
+    description = 'Bruteforce logins:'
+    commands = [
+        '{applications.hydra} -L "{wordlists.usernames}" -P "{wordlists.passwords}" -e nsr -s {port} -o "{scandir}/{category}{protocol}_{port}_ssh_hydra.txt" ssh://{address}',
+        '{applications.medusa} -U "{wordlists.usernames}" -P "{wordlists.passwords}" -e ns -n {port} -O "{scandir}/{category}{protocol}_{port}_ssh_medusa.txt" -M ssh -h {address}'
+    ]
+
+[service-scan.smb]
+
+service-names = [
+    '^smb',
+    '^microsoft\-ds',
+    '^netbios'
+]
+
+    [[service-scan.smb.scan]]
+    name = 'nmap-smb'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(nbstat or smb* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" --script-args="unsafe=1" -oN "{scandir}/{category}{protocol}_{port}_smb_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_smb_nmap.xml" {address}'
+
+    [[service-scan.smb.scan]]
+    name = 'smbclient'
+    command = '{applications.smbclient} -L\\ -N -I {address} 2>&1 | {applications.tee} "{scandir}/{category}smbclient.txt"'
+    run_once = true
+    ports.tcp = [139, 445]
+    
+    [[service-scan.smb.scan]]
+    name = 'smb-version'
+    command = '{applications.smb_version} {address} -P {port} | head -n 1 | {applications.tee} -a "{scandir}/{category}smb-version.txt"'
+    run_once = true
+    ports.tcp = [139, 445]
+
+    [[service-scan.smb.scan]]
+    name = 'smbmap-share-permissions'
+    command = '{applications.smbmap} -H {address} -P {port} 2>&1 | {applications.tee} -a "{scandir}/{category}smbmap-share-permissions.txt"; {applications.smbmap} -u null -p "" -H {address} -P {port} 2>&1 | {applications.tee} -a "{scandir}/{category}smbmap-share-permissions.txt"'
+
+    [[service-scan.smb.scan]]
+    name = 'smbmap-list-contents'
+    command = '{applications.smbmap} -H {address} -P {port} -R 2>&1 | {applications.tee} -a "{scandir}/{category}smbmap-list-contents.txt"; {applications.smbmap} -u null -p "" -H {address} -P {port} -R 2>&1 | {applications.tee} -a "{scandir}/{category}smbmap-list-contents.txt"'
+
+    [[service-scan.smb.scan]]
+    name = 'smbmap-execute-command'
+    command = '{applications.smbmap} -H {address} -P {port} -x "ipconfig /all" 2>&1 | {applications.tee} -a "{scandir}/{category}smbmap-execute-command.txt"; {applications.smbmap} -u null -p "" -H {address} -P {port} -x "ipconfig /all" 2>&1 | {applications.tee} -a "{scandir}/{category}smbmap-execute-command.txt"'
+   
+    [[service-scan.smb.scan]]
+    name = 'enum4linux'
+    command = '{applications.enum4linux} -a -M -l -d {address} 2>&1 | {applications.tee} "{scandir}/{category}enum4linux.txt"'
+    run_once = true
+    ports.tcp = [139, 389, 445]
+    ports.udp = [137]
+
+    [[service-scan.smb.scan]]
+    name = 'nbtscan'
+    command = '{applications.nbtscan} -rvh {address} 2>&1 | {applications.tee} "{scandir}/{category}nbtscan.txt"'
+    run_once = true
+    ports.udp = [137]
+
+    [[service-scan.smb.manual]]
+    description = '{applications.nmap} scans for SMB vulnerabilities that could potentially cause a DoS if scanned (according to Nmap). Be careful:'
+    commands = [
+        '{applications.nmap} {nmap_extra} -sV -p {port} --script="smb-vuln-ms06-025" --script-args="unsafe=1" -oN "{scandir}/{category}{protocol}_{port}_smb_ms06-025.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_smb_ms06-025.xml" {address}',
+        '{applications.nmap} {nmap_extra} -sV -p {port} --script="smb-vuln-ms07-029" --script-args="unsafe=1" -oN "{scandir}/{category}{protocol}_{port}_smb_ms07-029.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_smb_ms07-029.xml" {address}',
+        '{applications.nmap} {nmap_extra} -sV -p {port} --script="smb-vuln-ms08-067" --script-args="unsafe=1" -oN "{scandir}/{category}{protocol}_{port}_smb_ms08-067.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_smb_ms08-067.xml" {address}'
+    ]
+
+[service-scan.smtp]
+
+service-names = [
+    '^smtp'
+]
+
+    [[service-scan.smtp.scan]]
+    name = 'nmap-smtp'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(smtp* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_smtp_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_smtp_nmap.xml" {address}'
+
+    [[service-scan.smtp.scan]]
+    name = 'smtp-user-enum'
+    command = '{applications.smtp_user_enum} -M VRFY -U "{wordlists.usernames}" -t {address} -p {port} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_smtp_user-enum.txt"'
+
+[service-scan.snmp]
+
+service-names = [
+    '^snmp'
+]
+
+    [[service-scan.snmp.scan]]
+    name = 'nmap-snmp'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(snmp* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" -oN "{scandir}/{category}{protocol}_{port}_snmp-nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_snmp_nmap.xml" {address}'
+
+    [[service-scan.snmp.scan]]
+    name = 'onesixtyone'
+    command = '{applications.onesixtyone} -c /usr/share/seclists/Discovery/SNMP/common-snmp-community-strings_onesixtyone.txt -dd {address} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_onesixtyone.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk-system-processes'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 1.3.6.1.2.1.25.1.6.0 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk_system_processes.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk-running-processes'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 1.3.6.1.2.1.25.4.2.1.2 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk_running_processes.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk-process-paths'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 1.3.6.1.2.1.25.4.2.1.4 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk_process_paths.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk-storage-units'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 1.3.6.1.2.1.25.2.3.1.4 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk_storage_units.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk-software-names'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 1.3.6.1.2.1.25.6.3.1.2 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk_software_names.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk-user-accounts'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 1.3.6.1.4.1.77.1.2.25 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk_user_accounts.txt"'
+    run_once = true
+    ports.udp = [161]
+
+    [[service-scan.snmp.scan]]
+    name = 'snmpwalk-tcp-ports'
+    command = '{applications.snmpwalk} -c public -v 1 {address} 1.3.6.1.2.1.6.13.1.3 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_snmp_snmpwalk_tcp_ports.txt"'
+    run_once = true
+    ports.udp = [161]
+
+[service-scan.telnet]
+
+service-names = [
+    '^telnet'
+]
+
+    [[service-scan.telnet.scan]]
+    name = 'nmap-telnet'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="telnet-encryption,telnet-ntlm-info" -oN "{scandir}/{category}{protocol}_{port}_telnet-nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_telnet_nmap.xml" {address}'
+
+[service-scan.tftp]
+
+service-names = [
+    '^tftp'
+]
+
+    [[service-scan.tftp.scan]]
+    name = 'nmap-tftp'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="tftp-enum" -oN "{scandir}/{category}{protocol}_{port}_tftp-nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_tftp_nmap.xml" {address}'
+
+[service-scan.vnc]
+
+service-names = [
+    '^vnc'
+]
+
+    [[service-scan.vnc.scan]]
+    name = 'nmap-vnc'
+    command = '{applications.nmap} {nmap_extra} -sV -p {port} --script="(vnc* or realvnc* or ssl*) and not (brute or broadcast or dos or external or fuzzer)" --script-args="unsafe=1" -oN "{scandir}/{category}{protocol}_{port}_vnc_nmap.txt" -oX "{scandir}/xml/{category}{protocol}_{port}_vnc_nmap.xml" {address}'

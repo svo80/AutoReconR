@@ -1,0 +1,61 @@
+[port-scan.quick]
+
+    [port-scan.quick.nmap-quick]
+
+        [port-scan.quick.nmap-quick.service-detection]
+        command = '{applications.nmap}  {nmap_extra} -sV --version-all --top-ports 20 -oN "{scandir}/_quick_tcp_nmap.txt" -oX "{scandir}/xml/_quick_tcp_nmap.xml" {address}'
+        pattern = '^(?P<port>\d+)\/(?P<protocol>(tcp|udp))(.*)open(\s*)(?P<service>[\w\-\/]+)(\s*)(.*)$'
+
+    [port-scan.quick.nmap-top-20-udp]
+
+        [port-scan.quick.nmap-top-20-udp.service-detection]
+        command = '{applications.nmap}  {nmap_extra} -sU -A --top-ports=20 --version-all -oN "{scandir}/_top_20_udp_nmap.txt" -oX "{scandir}/xml/_top_20_udp_nmap.xml" {address}'
+        pattern = '^(?P<port>\d+)\/(?P<protocol>(tcp|udp))(.*)open(\s*)(?P<service>[\w\-\/]+)(\s*)(.*)$'
+
+
+[port-scan.debug]
+
+    [port-scan.debug.nmap-quick]
+
+        [port-scan.debug.nmap-quick.service-detection]
+        command = '{applications.nmap}  {nmap_extra} -p 80 -oN "{scandir}/_quick_tcp_nmap.txt" -oX "{scandir}/xml/_quick_tcp_nmap.xml" {address}'
+        pattern = '^(?P<port>\d+)\/(?P<protocol>(tcp|udp))(.*)open(\s*)(?P<service>[\w\-\/]+)(\s*)(.*)$'
+
+
+[service-scan.http]
+
+service-names = [
+    '^http',
+]
+
+ignore-service-names = [
+    # Micrsoft Windows RPC over HTTP (IIS)
+    '^nacn_http$'
+]
+
+    [[service-scan.http.scan]]
+    name = 'curl-index'
+    command = '{applications.curl}  -sSik {scheme}://{address}:{port}/ -m 10 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_index.html"'
+
+        [[service-scan.http.scan.pattern]]
+        pattern = '(?i)Powered by [^\n]+'
+
+   [[service-scan.http.scan]]
+    name = 'gobuster'
+    command = '{applications.gobuster} -u {scheme}://{address}:{port}/ -w /home/user/oscp/lab/auxiliary/tools/scanner/autoreconr/config/custom/gobuster.txt -e -f -k -l -r -s "200,204,301,302,307,403" -x "txt,html,htm,php,pl,asp,aspx" 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_gobuster.txt"'
+    level = 2 
+    limit_to = [80, 443, 8000, 8080]
+
+            [[service-scan.http.scan.pattern]]
+            description = 'HTTP resource discovered: {match}'
+            pattern = '(http[s]?://.+?)\s\(Status: 200\)'
+            except = ['manual$', 'icons$', 'lang$', 'images$', 'usage$', 'skins$']
+
+                [[service-scan.http.scan.pattern.post_processor]]
+                name = 'wkhtmltoimage'
+                command = '{applications.wkhtmltoimage}  --format png {match} {scandir}/{category}{protocol}_{port}_{scheme}_{record}.png'
+
+                [[service-scan.http.scan.pattern.post_processor]]
+                name = 'gobuster'
+                command = '{applications.gobuster} -u {match} -w /home/user/oscp/lab/auxiliary/tools/scanner/autoreconr/config/custom/gobuster.txt -e -f -k -l -r -s "200,204,301,302,307,403" -x "txt,html,htm,php,pl,asp,aspx" 2>&1 | {applications.tee} "{scandir}/{category}{protocol}_{port}_{scheme}_{record}_gobuster.txt"'
+                except = ['(.+\..*$)']
